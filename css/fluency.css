@@ -1,0 +1,13 @@
+body {
+  padding: 60px 5px 5px 5px;
+}
+.starter-template {
+  padding: 30px 9px;
+  text-align: center;
+}
+
+.entity-list {
+    height: auto;
+    max-height: 600px;
+    overflow-x: hidden;
+}
