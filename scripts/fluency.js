@@ -1,25 +1,25 @@
 var MovieSearch = React.createClass({
   handleStoryChange: function(e)
   {
-    this.setState({story: e.target.value})
-    this.props.onPatternChange(e.target.value)
+    this.setState({pattern: e.target.value});
+    this.props.onPatternChange(e.target.value);
   },
   getInitialState: function()
   {
-    return {
-      story: ''
-    }
-      
+    return (
+    {
+      pattern: ''
+    })
   },
   render: function()
   {
     return (
         <div className="input-group">
-          <span className="input-group-addon " id="basic-addon1">movie</span>
+          <span className="input-group-addon" id="basic-addon1">movie</span>
           <input type="text" 
             className="form-control" 
             aria-describedby="basic-addon1"
-            value={this.state.story}
+            value={this.state.pattern}
             onChange={this.handleStoryChange}
             />
         </div>
@@ -33,12 +33,17 @@ var MovieSearch = React.createClass({
 var ListItemSelectable = React.createClass({
   handleClick: function(a)
   {
-    this.props.onItemClick(a, this.props.id)
+    this.props.onItemClick(this.props.id)
   },
   render: function()
   {
+    var className='list-group-item';
+    if(this.props.active)
+    {
+      className='list-group-item active';
+    }
     return (
-        <li className="list-group-item" 
+        <li className={className} 
           onClick={this.handleClick}>
           {this.props.title}
         </li>
@@ -49,30 +54,25 @@ var ListItemSelectable = React.createClass({
 var MovieList = React.createClass({
   handleClick: function(e, movie_id)
   {
-    if(this.state.active)
-    {
-      this.state.active.className='list-group-item';
-    }
-    this.setState({active: e.target});
-    e.target.className+=" active";
     this.props.onMovieSelected(movie_id);
   },
   getInitialState: function()
   {
     return {
-      active: null
     }
   },
   render: function(){
     var stories = this.props.stories.map(
         function(story, i)
         {
+          
           return (
             <ListItemSelectable
               key={story.id}
               id={story.id}
               title = {story.title}
-              onItemClick={this.handleClick}
+              active = {story.id==this.props.active_id}
+              onItemClick={this.props.onMovieSelected}
               />
           );
         },
@@ -81,7 +81,6 @@ var MovieList = React.createClass({
     return(
       <div>
         <ul className="list-group entity-list" 
-          //onClick={this.handleClick.bind(null, -1)}
           >
           {stories}
         </ul>
@@ -109,46 +108,25 @@ var MovieBox = React.createClass({
   {
     this.props.onMovieSelected(movie_id);
   },
-  loadStories: function(pattern, page) {
-    $.ajax({
-      url: this.state.url,
-      dataType: 'json',
-      data: {pattern: pattern, page: page},
-      cache: false,
-      success: function(data)
-      {
-        this.setState({stories: data});
-      }.bind(this)
-    });
-  },
+  
   getInitialState: function()
   {
     return {
-      url: '/front/stories',
-      stories: [],
-      pattern: '',
-      page: 0
     };
-  },
-  componentDidMount: function() 
-  {
-    this.loadStories();
-  },
-  handlePatternChange: function(new_patern)
-  {
-    this.setState({pattern: new_patern, page: 0});
-    this.loadStories(new_patern);
   },
   render: function()
   {
     return(
         <div className="col-md-6">
           <MovieSearch 
-            story={this.state.pattern}
-            onPatternChange={this.handlePatternChange}
+            onPatternChange={this.props.onPatternChange}
             />
-          <MovieList stories={this.state.stories}
-            onMovieSelected={this.handleMovieSelected}
+          <MovieList 
+            stories={this.props.stories}
+            pages={this.props.pages}
+            page={this.props.page}
+            active_id={this.props.active_id}
+            onMovieSelected={this.props.onMovieSelected}
           />
         </div>
       );
@@ -156,53 +134,10 @@ var MovieBox = React.createClass({
 
 });
 //--------------------------------
-var SentenceSearch = React.createClass({
-  handlePatternChange: function(e)
-  {
-    this.setState({pattern: e.target.value});
-    this.props.onPatternChange(e.target.value);
-  },
-  getInitialState: function()
-  {
-    return {
-      pattern: ''
-    }
-  },
-  render: function()
-  {
-    return(
-      <div className="input-group">
-        <span className="input-group-addon" id="basic-addon2">words</span>
-        <input type="text" 
-          className="form-control" 
-          aria-describedby="basic-addon2"
-          value={this.state.pattern}
-          onChange={this.handlePatternChange}
-          />
 
-      </div>
-      );
-  }
 
-});
-
-var SentenceList = React.createClass({
-  handleClick: function(e, snippet_id)
-  {
-    if(this.state.active)
-    {
-      this.state.active.className='list-group-item';
-    }
-    this.setState({active: e.target});
-    e.target.className+=" active";
-  },
-  getInitialState: function()
-  {
-    return (
-    {active: null}
-      );
-    
-  },
+var SnippetList = React.createClass({
+  
   render: function()
   {
     var snippets = this.props.snippets.map(
@@ -213,7 +148,8 @@ var SentenceList = React.createClass({
             key={snippet.id}
             id={snippet.id}
             title={snippet.text}
-            onItemClick={this.handleClick} />
+            active={snippet.id==this.props.active_id}
+            onItemClick={this.props.onSnippetSelected} />
         );
       },
       this
@@ -229,24 +165,92 @@ var SentenceList = React.createClass({
 
 });
 
-var SentencePages = React.createClass({
-  
+var PageSelectable = React.createClass({
+  handlePageSelected: function()
+  {
+    if(this.props.active)
+    {
+      return;
+    }
+    this.props.onItemClick(this.props.id);
+  },
   render: function()
   {
+    var className
+    if(this.props.active)
+    {
+      className="active";
+    }
+    else
+    {
+      className="";
+    }
+    return (
+      <li 
+          className={className}
+          onClick={this.handlePageSelected}>
+        <a href="#">{this.props.id+1}</a>
+      </li>
+      );
+  }
+});
+
+var SnippetPages = React.createClass({
+  render: function()
+  {
+    var pages = [];
+    var _active = this.props.active;
+    var left = 0;
+    var right = this.props.pages;
+    var i;
+    if(left<0)
+    {
+      left=0;
+    }
+    if(right>this.props.pages)
+    {
+      right=this.props.pages;
+    }
+    if(_active<0)
+    {
+      _active=0;
+    }
+    if(_active>=this.props.pages)
+    {
+      _active=this.props.pages-1;
+    }
+
+    var numbers= [];
+    for(i=left; i<right; i++)
+    {
+      numbers.push(i);
+    }
+    pages = numbers.map(
+        function(a, i)
+        {
+          return(
+            <PageSelectable
+              key={a}
+              id={a}
+              onItemClick={this.props.onPageChanged}
+              active={this.props.page==i}
+            />
+          );
+
+        },
+        this
+      );
+
     return(
       <nav>
         <ul className="pagination">
-          <li>
+          <li className="disabled">
             <a href="#" aria-label="Previous">
               <span aria-hidden="true">&laquo;</span>
             </a>
           </li>
-          <li><a href="#">1</a></li>
-          <li><a href="#">2</a></li>
-          <li><a href="#">3</a></li>
-          <li><a href="#">4</a></li>
-          <li><a href="#">5</a></li>
-          <li>
+          {pages}
+          <li className="disabled">
             <a href="#" aria-label="Next">
               <span aria-hidden="true">&raquo;</span>
             </a>
@@ -255,85 +259,27 @@ var SentencePages = React.createClass({
       </nav>
       );
   }
-})
+});
 
-var SentenceBox = React.createClass({
-  loadSnippets: function(params)
-  {
-    if(!params.words && !params.story_id)
-    {
-      return;
-    }
-    $.ajax({
-      url: '/front/snippets',
-      dataType: 'json',
-      data: params,
-      cache: false,
-      success: function(data)
-      {
-        this.setState({snippets: data, shown: params});
-      }.bind(this),
-      error: function(xhr, status, err)
-      {
-        console.log(xhr, status, err);
-      }.bind(this)
-    });
-  },
-  handlePatternChange: function(new_pattern)
-  {
-    this.props.onPatternChange(new_pattern);
-    this.setState({pattern: new_pattern, page:0, pages:0});
-    this.loadSnippets(new_pattern, 0);
-
-  },
-  getInitialState: function()
-  {
-    return {
-      movie_id: this.props.movie_id,
-      url: '/front/snippets',
-      snippets: [],
-      pattern: '',
-      page: 0,
-      pages: 0,
-      shown: {pattern: '', page: 0}
-    }
-  },
-  getRequeiredState: function()
-  {
-    if(this.props.movie_id)
-    {
-      return {story_id: this.props.movie_id, page: 0}
-    }
-    else
-    {
-      return {words: this.state.pattern, page: 0}
-    }
-  },
-  isReqiredUpdate: function()
-  {
-    var required = this.getRequeiredState();
-    if(required.words != this.state.shown.words 
-      || required.story_id != this.state.shown.story_id)
-    {
-      return true;
-    }
-    return false;
-  },
+var SnippetBox = React.createClass({
+  
   render: function()
   {
-    if(this.isReqiredUpdate())
-    {
-      this.loadSnippets(this.getRequeiredState());
-    }
+   
     return (
       <div className="col-md-6">
-        <SentenceSearch 
-          pattern={this.state.pattern}
-          onPatternChange={this.handlePatternChange}
-        />
-        <SentenceList 
-          snippets={this.state.snippets}
+        
+        <SnippetList 
+          snippets={this.props.snippets}
+          active_id={this.props.active_id}
+          onSnippetSelected={this.props.onSnippetSelected}
         />  
+
+        <SnippetPages 
+          pages={this.props.pages}
+          page={this.props.page}
+          onPageChanged={this.props.onPageSelected}
+        />
       </div>
       );
   }
@@ -341,43 +287,134 @@ var SentenceBox = React.createClass({
 });
 
 var PlateBox = React.createClass({
+  loadStories: function(pattern, page) {
+    $.ajax({
+      url: '/front/stories',
+      dataType: 'json',
+      data: {pattern: pattern, page: page},
+      cache: false,
+      success: function(data)
+      {
+        this.setState({movies: data});
+      }.bind(this)
+    });
+  },
+  loadSnippets: function(params)
+  {
+    if(!params.story_id)
+    {
+      return;
+    }
+    $.ajax({
+      url: '/front/stories/'+params.story_id+'/snippets',
+      dataType: 'json',
+      data: {page: params.page},
+      cache: false,
+      success: function(data)
+      {
+        console.log(data.pages);
+        this.setState({
+          snippets: data.snippets,
+          snippets_pages: data.pages,
+          snippets_page: data.page
+        });
+      }.bind(this),
+      error: function(xhr, status, err)
+      {
+        console.log(xhr, status, err);
+        this, setState({movies: [], snippets_pages: 0, snippets_page: 0});
+      }.bind(this)
+    });
+  },
   handleMovieSelected: function(movie_id)
   {
-    this.setState({movie_id: movie_id});
-    this.props.player.setSource('/123')
+    this.setState({movie_id_active: movie_id});
+    this.props.player.src = '/front/stories/'+movie_id+'/sound';
+    this.props.player.load();
+    this.props.player.play();
+    this.loadSnippets({story_id: movie_id, page: 0});
+
+  },
+  handleSnippetSelected: function(snippet_id)
+  {
+    this.setState({snippet_id_active: snippet_id})
+    this.props.player.src = '/front/snippets/'+snippet_id+'/sound';
+    this.props.player.load();
+    this.props.player.play();
   },
   handleSentenceFilterChanged: function(new_patern)
   {
     this.setState({pattern: new_patern, movie_id: null});
   },
+  handlePatternChange: function(new_patern)
+  {
+    this.loadStories(new_patern, 0);
+  },
+  handleMoviePageChanged: function(new_page)
+  {
+    if(new_page<0 || new_page>= this.state.pages)
+    {
+      return;
+    }
+    this.setState({movies_page: new_page});
+  },
+  handleSnippetPageChanged: function(new_page)
+  {
+    if(new_page<0 || new_page>=this.state.snippets_pages)
+    {
+      return;
+    }
+    this.setState({snippets_page: new_page});
+    this.loadSnippets({story_id: this.state.movie_id_active, page: new_page});
+
+  },
   getInitialState: function()
   {
     return {
-      movie_id: null,
-      pattern: ''
+      snippets: [],
+      snippets_page: 0,
+      snippets_pages: 0,
+      snippet_id_active: null,
+      movies: [],
+      movies_page: 0,
+      movies_pages: 0,
+      movie_id_active: null
     }
 
+  },
+  componentDidMount: function()
+  {
+    this.loadStories('', 0);
   },
   render: function() {
     return (
       <div>
         <div className="row">
           <MovieBox 
+            onPatternChange={this.handlePatternChange}
             onMovieSelected={this.handleMovieSelected}
+            onPageSelected={this.handleMoviePageChanged}
+            stories={this.state.movies}
+            page={this.state.movies_page}
+            pages={this.state.movies_pages}
+            active_id={this.state.movie_id_active}
           />
-          <SentenceBox 
-            movie_id={this.state.movie_id}
-            pattern={this.state.pattern}
-            onPatternChange={this.handleSentenceFilterChanged}
+          <SnippetBox 
+            onSnippetSelected={this.handleSnippetSelected}
+            onPageSelected={this.handleSnippetPageChanged}
+            snippets={this.state.snippets}
+            page={this.state.snippets_page}
+            pages={this.state.snippets_pages}
+            active_id={this.state.snippet_id_active}
           />
         </div>
         
         <div className="row">
           <div className="col-md-6">
-            <MoviePages />
-          </div>
-          <div className="col-md-6">
-            <SentencePages />
+            <MoviePages 
+              page={this.props.page}
+              pages={this.props.pages}
+            />
           </div>
         </div>
       </div>
